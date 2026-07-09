@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michael Doc - ระบบจัดเก็บและบริหารหนังสือราชการ</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Sarabun สำหรับภาษาไทย และ Inter สำหรับตัวเลข/ภาษาอังกฤษ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body class="bg-slate-50 text-slate-800 font-sarabun antialiased h-screen overflow-hidden flex">
+
+    <!-- ========================================== -->
+    <!-- หน้าจอ Login (Simple Password Barrier)     -->
+    <!-- ========================================== -->
+    <div id="login-screen" class="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm z-50 flex justify-center items-center px-4">
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+            <div class="text-center mb-8">
+                <div class="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-folder-tree text-2xl text-emerald-600"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 font-inter">Michael Doc</h2>
+                <p class="text-slate-500 mt-2 text-sm md:text-base">ระบบจัดเก็บและบริหารหนังสือราชการ</p>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-700 mb-2">รหัสผ่านเข้าใช้งานระบบ</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-lock text-slate-400"></i>
+                        </div>
+                        <input type="password" id="password" class="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 transition-colors" placeholder="กรอกรหัสผ่าน" required>
+                    </div>
+                    <p id="login-error" class="text-red-500 text-sm mt-2 hidden">รหัสผ่านไม่ถูกต้อง</p>
+                </div>
+                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors">
+                    เข้าสู่ระบบ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- โครงสร้างหลัก (Main App Layout)            -->
+    <!-- ========================================== -->
+    <div id="app-container" class="flex w-full h-full hidden opacity-0 transition-opacity duration-500 relative">
+        
+        <!-- Mobile Sidebar Overlay -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-20 hidden md:hidden"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-72 bg-white border-r border-slate-200 flex flex-col h-full shadow-sm z-30 absolute md:relative transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+            <!-- Logo Area -->
+            <div class="h-20 flex items-center px-6 border-b border-slate-100 shrink-0">
+                <i class="fa-solid fa-folder-tree text-emerald-600 text-2xl mr-3"></i>
+                <h1 class="text-xl font-bold text-slate-800 font-inter tracking-tight">Michael Doc</h1>
+                <!-- Close Button (Mobile Only) -->
+                <button id="btn-close-menu" class="ml-auto md:hidden text-slate-400 hover:text-slate-600 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+
+            <!-- Navigation Categories -->
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1.5 custom-scrollbar">
+                <a href="#" class="nav-item active flex items-center px-3 py-3 text-sm font-medium rounded-lg text-emerald-700 bg-emerald-50 transition-colors" data-view="dashboard">
+                    <i class="fa-solid fa-chart-pie w-6 text-center mr-2"></i>
+                    ภาพรวมเอกสารราชการ
+                </a>
+                <a href="#" class="nav-item flex items-center px-3 py-3 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100 transition-colors" data-view="table">
+                    <i class="fa-solid fa-list w-6 text-center mr-2"></i>
+                    รายการเอกสารทั้งหมด
+                </a>
+            </nav>
+
+            <!-- Bottom Area (API Connection Status) -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 shrink-0">
+                <div class="flex items-center text-sm font-medium text-slate-700 bg-white p-2.5 border border-slate-300 rounded-md shadow-sm">
+                    <i id="api-icon" class="fa-solid fa-server text-slate-400 mr-2"></i>
+                    <span id="api-status">รอการเชื่อมต่อ API...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden relative w-full">
+            
+            <!-- Topbar (Search & Actions) -->
+            <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-10 shrink-0">
+                <div class="flex items-center">
+                    <button id="btn-menu-toggle" class="md:hidden text-slate-500 hover:text-emerald-600 mr-4 text-xl">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h2 class="text-lg md:text-2xl font-bold text-slate-800 truncate max-w-[150px] md:max-w-none" id="current-view-title">ภาพรวมเอกสารราชการ</h2>
+                </div>
+                
+                <div class="flex items-center space-x-2 md:space-x-4">
+                    <!-- Advanced Search -->
+                    <div class="relative group">
+                        <!-- ไอคอนแว่นขยายสำหรับมือถือ (คลิกเพื่อแสดงช่องค้นหา) -->
+                        <button id="btn-mobile-search" class="md:hidden text-slate-500 hover:text-emerald-600 p-2">
+                            <i class="fa-solid fa-search"></i>
+                        </button>
+                        
+                        <!-- ช่องค้นหา Desktop / ซ่อนใน Mobile -->
+                        <div id="search-container" class="hidden md:block absolute md:relative right-0 top-full md:top-auto mt-2 md:mt-0 w-64 lg:w-96 bg-white md:bg-transparent rounded-lg shadow-lg md:shadow-none p-2 md:p-0 border border-slate-200 md:border-none z-20">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-search text-slate-400"></i>
+                                </div>
+                                <input type="text" id="search-input" class="block w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-full focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50 focus:bg-white transition-all" placeholder="ค้นหาหนังสือ...">
+                                
+                                <!-- Advanced Search Dropdown Button -->
+                                <div class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-emerald-600">
+                                    <i class="fa-solid fa-sliders" id="btn-adv-search"></i>
+                                </div>
+                            </div>
+
+                            <!-- Filter Popover -->
+                            <div id="adv-search-popover" class="hidden absolute right-0 mt-2 w-72 md:w-80 bg-white rounded-xl shadow-xl border border-slate-100 p-5 z-30">
+                                <h4 class="text-sm font-bold text-slate-700 mb-3 border-b pb-2">ค้นหาขั้นสูง</h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">เลขที่หนังสือ</label>
+                                        <input type="text" id="filter-doc-num" class="w-full text-sm border-slate-300 rounded-md py-1.5 focus:ring-emerald-500 focus:border-emerald-500" placeholder="เช่น รง 0101/ว123">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">หมวดหมู่</label>
+                                        <select id="filter-category" class="w-full text-sm border-slate-300 rounded-md py-1.5 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                                            <option value="">-- ทั้งหมด --</option>
+                                            <option value="01_หนังสือรับ">01_หนังสือรับ</option>
+                                            <option value="02_หนังสือส่ง">02_หนังสือส่ง</option>
+                                            <option value="03_หนังสือภายใน">03_หนังสือภายใน/เวียน</option>
+                                            <option value="04_รายงานการประชุม">04_รายงานการประชุม</option>
+                                            <option value="05_หนังสืออื่นๆ">05_หนังสืออื่นๆ/ทั่วไป</option>
+                                        </select>
+                                    </div>
+                                     <div>
+                                         <label class="block text-xs font-medium text-slate-600 mb-1">ปีงบประมาณ</label>
+                                         <input type="number" id="filter-fiscal-year" class="w-full text-sm border-slate-300 rounded-md py-1.5 focus:ring-emerald-500 focus:border-emerald-500 font-inter" placeholder="ระบุปีงบประมาณ เช่น 2569">
+                                     </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-600 mb-1">ตั้งแต่วันที่</label>
+                                            <input type="date" id="filter-date-start" class="w-full text-sm border-slate-300 rounded-md py-1.5 focus:ring-emerald-500 focus:border-emerald-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-600 mb-1">ถึงวันที่</label>
+                                            <input type="date" id="filter-date-end" class="w-full text-sm border-slate-300 rounded-md py-1.5 focus:ring-emerald-500 focus:border-emerald-500">
+                                        </div>
+                                    </div>
+                                     <div class="grid grid-cols-2 gap-2 mt-3">
+                                         <button type="button" id="btn-clear-filters" class="w-full border border-slate-300 text-slate-700 text-sm py-2 rounded-md hover:bg-slate-100 transition">ล้างตัวกรอง</button>
+                                         <button type="button" id="btn-apply-filters" class="w-full bg-emerald-600 text-white text-sm py-2 rounded-md hover:bg-emerald-700 transition font-medium">ค้นหา</button>
+                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Document Button -->
+                    <button id="btn-new-doc" class="flex items-center px-3 py-2 md:px-4 md:py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 shadow-sm transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-plus md:mr-2"></i>
+                        <span class="hidden md:inline">เพิ่มหนังสือใหม่</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="hidden absolute inset-0 bg-slate-50/80 backdrop-blur-sm z-50 flex flex-col justify-center items-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mb-3"></div>
+                <p class="text-slate-500 font-medium">กำลังโหลดข้อมูล...</p>
+            </div>
+
+            <!-- Content Area: DASHBOARD VIEW -->
+            <div id="dashboard-view" class="flex-1 overflow-auto p-4 md:p-8 custom-scrollbar">
+                <!-- Stat Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center">
+                        <div class="w-10 h-10 md:w-14 md:h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-lg md:text-2xl mb-2 md:mb-0 md:mr-4 shrink-0">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs md:text-sm font-medium text-slate-500 mb-0.5 md:mb-1">เอกสารทั้งหมด</p>
+                            <h3 class="text-xl md:text-2xl font-bold text-slate-800" id="stat-total">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center">
+                        <div class="w-10 h-10 md:w-14 md:h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg md:text-2xl mb-2 md:mb-0 md:mr-4 shrink-0">
+                            <i class="fa-solid fa-inbox"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs md:text-sm font-medium text-slate-500 mb-0.5 md:mb-1">หนังสือรับ</p>
+                            <h3 class="text-xl md:text-2xl font-bold text-slate-800" id="stat-inbox">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center">
+                        <div class="w-10 h-10 md:w-14 md:h-14 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-lg md:text-2xl mb-2 md:mb-0 md:mr-4 shrink-0">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs md:text-sm font-medium text-slate-500 mb-0.5 md:mb-1">หนังสือส่ง</p>
+                            <h3 class="text-xl md:text-2xl font-bold text-slate-800" id="stat-sent">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center">
+                        <div class="w-10 h-10 md:w-14 md:h-14 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-lg md:text-2xl mb-2 md:mb-0 md:mr-4 shrink-0">
+                            <i class="fa-solid fa-check-double"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs md:text-sm font-medium text-slate-500 mb-0.5 md:mb-1">ดำเนินการแล้ว</p>
+                            <h3 class="text-xl md:text-2xl font-bold text-slate-800" id="stat-done">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fiscal Year Breakdown Section -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 mb-6 md:mb-8">
+                    <h3 class="text-base md:text-lg font-bold text-slate-800 mb-4">จำนวนเอกสารแยกตามปีงบประมาณ</h3>
+                    <div id="fiscal-year-breakdown" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Will be dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
+                        <h3 class="text-base md:text-lg font-bold text-slate-800 mb-4">สัดส่วนเอกสารตามหมวดหมู่</h3>
+                        <div class="relative h-64 w-full flex justify-center">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
+                        <h3 class="text-base md:text-lg font-bold text-slate-800 mb-4">สถานะการปฏิบัติงาน</h3>
+                        <div class="relative h-64 w-full flex justify-center">
+                            <canvas id="actionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area: TABLE VIEW -->
+            <div id="table-view" class="flex-1 overflow-auto p-4 md:p-8 custom-scrollbar relative hidden">
+                <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 md:px-6 md:py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-24">หมวดหมู่</th>
+                                    <th scope="col" class="px-4 py-3 md:px-6 md:py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-32">เลขที่หนังสือ</th>
+                                    <th scope="col" class="px-4 py-3 md:px-6 md:py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">ลงวันที่</th>
+                                    <th scope="col" class="px-4 py-3 md:px-6 md:py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider min-w-[200px]">เรื่อง</th>
+                                    <th scope="col" class="px-4 py-3 md:px-6 md:py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-40 min-w-[150px]">จาก -> ถึง</th>
+                                    <th scope="col" class="px-4 py-3 md:px-6 md:py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">การปฏิบัติ</th>
+                                    <th scope="col" class="px-4 py-3 md:px-6 md:py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider w-36 sticky right-0 bg-slate-50 z-10 border-l border-slate-200">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="document-table-body" class="bg-white divide-y divide-slate-100">
+                                <!-- Data rows will be injected here via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="empty-state" class="hidden py-12 md:py-16 flex flex-col items-center justify-center text-center px-4">
+                        <div class="bg-slate-50 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa-regular fa-folder-open text-2xl md:text-3xl text-slate-400"></i>
+                        </div>
+                        <h3 class="text-base md:text-lg font-medium text-slate-900">ไม่พบเอกสาร</h3>
+                        <p class="text-xs md:text-sm text-slate-500 mt-1 max-w-sm">ยังไม่มีเอกสารในปีงบประมาณนี้ หรือไม่พบผลลัพธ์จากการค้นหา</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- Modal ฟอร์มเอกสาร (เพิ่ม/แก้ไข)            -->
+    <!-- ========================================== -->
+    <div id="modal-add-doc" class="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm z-50 flex justify-center items-center hidden opacity-0 transition-opacity px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col transform scale-95 transition-transform">
+            
+            <div class="flex justify-between items-center p-4 md:p-6 border-b border-slate-100 shrink-0">
+                <h3 class="text-lg md:text-xl font-bold text-slate-800" id="modal-title">เพิ่มหนังสือราชการใหม่</h3>
+                <button id="btn-close-modal" class="text-slate-400 hover:text-slate-600 transition-colors p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="add-doc-form" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 custom-scrollbar">
+                
+                <!-- Hidden ID for Edit Mode -->
+                <input type="hidden" id="editDocId" value="">
+
+                <!-- แถว 0: หมวดหมู่ & ปีงบประมาณ -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">หมวดหมู่เอกสาร *</label>
+                        <select id="docCategory" required class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 py-2 px-3 border text-sm bg-white">
+                            <option value="01_หนังสือรับ">01_หนังสือรับ</option>
+                            <option value="02_หนังสือส่ง">02_หนังสือส่ง</option>
+                            <option value="03_หนังสือภายใน">03_หนังสือภายใน/เวียน</option>
+                            <option value="04_รายงานการประชุม">04_รายงานการประชุม</option>
+                            <option value="05_หนังสืออื่นๆ">05_หนังสืออื่นๆ/ทั่วไป</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">ปีงบประมาณ *</label>
+                        <input type="number" id="docFiscalYear" required class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 py-2 px-3 border text-sm font-inter" placeholder="ระบุปีงบประมาณ เช่น 2569" min="2500" max="2700">
+                    </div>
+                </div>
+
+                <!-- แถว 1: เลขที่ & วันที่ -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">เลขที่หนังสือ *</label>
+                        <input type="text" id="docNum" required class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 py-2 px-3 border text-sm" placeholder="เช่น รง 0101/ว123">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">ลงวันที่ในหนังสือ *</label>
+                        <input type="date" id="docDate" required class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 py-2 px-3 border text-sm">
+                    </div>
+                </div>
+
+                <!-- แถว 2: เรื่อง -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">เรื่อง *</label>
+                    <input type="text" id="docTitle" required class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 py-2 px-3 border text-sm" placeholder="ชื่อเรื่องหนังสือราชการ">
+                </div>
+
+                <!-- แถว 3: จาก -> ถึง -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">จากหน่วยงาน</label>
+                        <input type="text" id="docFrom" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 py-2 px-3 border text-sm" placeholder="ระบุหน่วยงานต้นทาง">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">ถึงหน่วยงาน</label>
+                        <input type="text" id="docTo" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 py-2 px-3 border text-sm" placeholder="ระบุหน่วยงานปลายทาง">
+                    </div>
+                </div>
+
+                <!-- แถว 4: การปฏิบัติ & หมายเหตุ -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">การปฏิบัติ</label>
+                        <select id="docAction" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 py-2 px-3 border text-sm bg-white">
+                            <option value="เพื่อทราบ">เพื่อทราบ</option>
+                            <option value="เพื่อพิจารณา">เพื่อพิจารณา</option>
+                            <option value="ดำเนินการแล้ว">ดำเนินการแล้ว</option>
+                            <option value="เวียนแจ้ง">เวียนแจ้ง</option>
+                            <option value="อื่นๆ">อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">คำสำคัญ/หมายเหตุ (Tags)</label>
+                        <input type="text" id="docTags" class="w-full border-slate-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 py-2 px-3 border text-sm" placeholder="คั่นด้วยลูกน้ำ เช่น ด่วนมาก, อนุมัติงบ">
+                    </div>
+                </div>
+
+                <!-- อัปโหลดไฟล์ -->
+                <div class="pt-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">แนบไฟล์เอกสาร * (กรณีแก้ไข อาจข้ามได้หากไม่เปลี่ยนไฟล์)</label>
+                    <div id="drop-zone" class="mt-1 flex justify-center px-4 md:px-6 pt-4 pb-5 border-2 border-slate-300 border-dashed rounded-xl hover:border-emerald-500 hover:bg-emerald-50/50 transition-colors bg-slate-50 cursor-pointer" onclick="document.getElementById('docFile').click()">
+                        <div class="space-y-1 text-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-2xl md:text-3xl text-emerald-400 mb-2"></i>
+                            <div class="flex text-sm text-slate-600 justify-center">
+                                <label for="docFile" class="relative cursor-pointer bg-transparent rounded-md font-medium text-emerald-600 hover:text-emerald-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-emerald-500">
+                                    <span>อัปโหลดไฟล์</span>
+                                    <input id="docFile" name="docFile" type="file" class="sr-only">
+                                </label>
+                                <p class="pl-1 hidden md:inline">หรือลากไฟล์มาวาง</p>
+                            </div>
+                            <p class="text-xs text-slate-500">รองรับ PDF, Word, Excel, รูปภาพ (Max 10MB)</p>
+                            <p id="file-name-display" class="text-sm font-bold text-emerald-600 mt-2 hidden"></p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Footer Buttons -->
+            <div class="p-4 md:p-6 border-t border-slate-100 flex justify-end space-x-3 bg-slate-50 rounded-b-2xl shrink-0">
+                <button type="button" id="btn-cancel-doc" class="px-4 py-2 md:px-5 md:py-2.5 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-100 transition-colors">ยกเลิก</button>
+                <button type="submit" form="add-doc-form" id="btn-save-doc" class="px-4 py-2 md:px-5 md:py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 flex items-center transition-colors">
+                    <i class="fa-solid fa-save mr-2"></i> บันทึกข้อมูล
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
